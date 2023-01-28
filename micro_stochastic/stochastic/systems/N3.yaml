@@ -1,0 +1,27 @@
+name: stochastic
+
+system:
+  outputs:
+    active_cases: REAL
+    total_cases: REAL
+    c_dot: REAL
+    Level: REAL
+  definitions:
+    stochastic_system: !include N2.yaml
+    external_io: !include ../plants/external_io.yaml
+  instances:
+    stochastic_system: stochastic_system
+    external_io: external_io
+  mappings:
+    !include external.yaml
+   
+codegenConfig:
+  execution:
+    stepSize: 1
+    simulationTime: 100
+  logging:
+    enable: true
+    interval: 1
+    file: out.csv
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: true

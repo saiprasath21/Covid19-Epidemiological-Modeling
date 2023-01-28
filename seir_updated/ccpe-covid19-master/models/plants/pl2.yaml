@@ -1,0 +1,134 @@
+inputs:
+  R0: REAL
+  R0c: REAL
+  c: REAL
+outputs:
+  S: REAL
+  E: REAL
+  P: REAL
+  Iu: REAL
+  Ic: REAL
+  Ru: REAL
+  Rc: REAL
+  D: REAL
+  cases: REAL
+  C_dot: REAL
+parameters:
+  population:
+    type: REAL
+    default: 4822233
+  initial_cases:
+    type: REAL
+    default: 39
+  initial_case_distribution_factor:
+    type: REAL
+    default: 4.8
+  vaccine_arrival_date:
+    type: REAL
+    default: -1
+  vaccine_implementation_time:
+    type: REAL
+    default: -1
+  eps:
+    type: REAL
+    default: 0.15
+  alpha:
+    type: REAL
+    default: 0.25
+  delta:
+    type: REAL
+    default: 1
+  gamma:
+    type: REAL
+    default: 0.1
+  CFR0:
+    type: REAL
+    default: 0.01
+  CFR1:
+    type: REAL
+    default: 0.02
+  n_ICU:
+    type: REAL
+    default: 300
+  p_ICU:
+    type: REAL
+    default: 0.0125
+locations:
+  unvaccinated:
+    flow:
+      S: -(beta * S * (eps * P + Iu) + betac * S * Ic) / population
+      E: (beta * S * (eps * P + Iu) + betac * S * Ic) / population - alpha * E
+      P: alpha * E - delta * P
+      Iu: delta * P - (gamma + c) * Iu
+      Ic: c * Iu - gamma * Ic
+      Ru: gamma * (1 - CFR) * Iu
+      Rc: gamma * (1 - CFR) * Ic
+      D: gamma * CFR * (Iu + Ic)
+      cases: c * Iu
+      t: 1
+    update:
+      beta: R0 / (eps / delta + 1 / gamma)
+      betac: R0c / (eps / delta + 1 / gamma)
+      C_dot: c * Iu
+      CFR: calc_CFR((Iu + Ic) * p_ICU)
+    transitions:
+      - to: partially_vaccinated
+        guard: vaccine_arrival_date >= 0 && t >= vaccine_arrival_date && vaccine_implementation_time > 0
+      - to: fully_vaccinated
+        guard: vaccine_arrival_date >= 0 && t >= vaccine_arrival_date && vaccine_implementation_time <= 0
+  partially_vaccinated:
+    flow:
+      S: -(beta * S * (eps * P + Iu) + betac * S * Ic) / population - population / vaccine_implementation_time
+      E: (beta * S * (eps * P + Iu) + betac * S * Ic) / population - alpha * E
+      P: alpha * E - delta * P
+      Iu: delta * P - (gamma + c) * Iu
+      Ic: c * Iu - gamma * Ic
+      Ru: gamma * (1 - CFR) * Iu
+      Rc: gamma * (1 - CFR) * Ic
+      D: gamma * CFR * (Iu + Ic)
+      cases: c * Iu
+    update:
+      beta: R0 / (eps / delta + 1 / gamma)
+      betac: R0c / (eps / delta + 1 / gamma)
+      C_dot: c * Iu
+      CFR: calc_CFR((Iu + Ic) * p_ICU)
+    transitions:
+      - to: fully_vaccinated
+        guard: S <= 0
+        update:
+          S: 0
+  fully_vaccinated:
+    flow:
+      E: (beta * S * (eps * P + Iu) + betac * S * Ic) / population - alpha * E
+      P: alpha * E - delta * P
+      Iu: delta * P - (gamma + c) * Iu
+      Ic: c * Iu - gamma * Ic
+      Ru: gamma * (1 - CFR) * Iu
+      Rc: gamma * (1 - CFR) * Ic
+      D: gamma * CFR * (Iu + Ic)
+      cases: c * Iu
+    update:
+      S: 0
+      beta: R0 / (eps / delta + 1 / gamma)
+      betac: R0c / (eps / delta + 1 / gamma)
+      C_dot: c * Iu
+      CFR: calc_CFR((Iu + Ic) * p_ICU)
+functions:
+  calc_CFR:
+    inputs:
+      ICU_patients: REAL
+    logic: |
+      if(ICU_patients > n_ICU) {
+        return CFR1 - (CFR1 - CFR0) * n_ICU / ICU_patients
+      }
+      return CFR0
+initialisation:
+  state: unvaccinated
+  valuations:
+    S: population - ((1 + (1/alpha) + (1/alpha) * (1/delta)) * (1 + initial_case_distribution_factor) * initial_cases)
+    E: (1/alpha) * (1/delta) * (1 + initial_case_distribution_factor) * initial_cases
+    P: (1/delta) * (1 + initial_case_distribution_factor) * initial_cases
+    Iu: initial_case_distribution_factor * initial_cases
+    Ic: initial_cases
+    cases: initial_cases
+    CFR: calc_CFR(0)

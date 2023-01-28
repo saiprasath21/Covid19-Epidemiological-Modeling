@@ -1,0 +1,5 @@
+#define STEP_SIZE 0.01
+#define SIMULATION_TIME 600.0
+#define ENABLE_LOGGING 1
+#define LOGGING_FILE "out.csv"
+#define LOGGING_INTERVAL 0.1

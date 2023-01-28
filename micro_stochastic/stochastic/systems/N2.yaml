@@ -1,0 +1,25 @@
+inputs:
+  !include random_variables.yaml
+  
+outputs:
+  active_cases: REAL
+  total_cases: REAL
+  c_dot: REAL
+  Level: REAL
+definitions:
+  Controller: !include ../controllers/nzc2_controller.yaml
+  net: !include N1.yaml
+instances:
+  Controller: Controller
+  Net: net
+mappings:
+  !include N1_input.yaml
+  Net.Ro: Controller.R0
+  Net.ce: Controller.CE
+  Controller.Ic: Net.active_cases
+  Controller.C_dot: Net.c_dot
+  
+  active_cases: Net.active_cases
+  total_cases: Net.total_cases
+  c_dot: Net.c_dot
+  Level: Controller.Level

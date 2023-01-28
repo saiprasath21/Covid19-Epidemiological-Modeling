@@ -1,0 +1,11 @@
+*.jar
+output/
+
+generated_c/**/*
+!generated_c/**/*.*
+!generated_c/**/*/
+!generated_c/**/Makefile
+
+generated_c/**/*.o
+generated_c/**/*.a
+generated_c/**/*.csv

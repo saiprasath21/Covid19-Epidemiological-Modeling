@@ -1,0 +1,131 @@
+inputs:
+  R0: REAL
+  control_efficiency: REAL
+  
+outputs:
+  active_cases: REAL
+  C_dot: REAL
+  
+parameters:
+  population:
+    type: REAL
+    default: 4822233
+  initial_cases:
+    type: REAL
+    default: 39
+  initial_case_distribution_factor:
+    type: REAL
+    default: 4.8
+  subclinical:
+    type: REAL
+    default: 0.33
+  c_iso: 
+    type: REAL
+    default: 0.65
+  c_subclinical:
+    type: REAL
+    default: 0.5
+  p_hosp:
+    type: REAL
+    default: 0.0525
+  mean_hosp:
+    type: REAL
+    default: 10
+  g_shape:
+    type: REAL
+    default: 5.67
+  g_scale: 
+    type: REAL
+    default: 2.83
+  iso_mean:
+    type: REAL
+    default: 2.18
+  onset_shape:
+    type: REAL
+    default: 6.0
+  onset_scale:
+    type: REAL
+    default: 0.95
+  reporting_shape:
+    type: REAL
+    default: 1
+  reporting_scale:
+    type: REAL
+    default: 3.48
+  end_active:
+    type: REAL
+    default: 30
+
+locations:
+  model:
+    invariant: t>0
+    flow:
+      t: 1
+    update:
+      C_dot: total_cases 
+      total_cases: outbreak_step(R0, t, total_cases, population,initial_cases,initial_case_distribution_factor,subclinical,c_iso,c_subclinical,p_hosp,mean_hosp,g_shape,g_scale,iso_mean,onset_shape,onset_scale,reporting_shape, reporting_scale, end_active, control_efficiency)
+      active_cases: calc_active(0)
+      C_dot: total_cases - C_dot
+  
+functions:
+  initialize:
+    inputs:
+      R0: REAL
+      t: REAL
+      total_cases: REAL
+      population: REAL
+      initial_cases: REAL
+      initial_case_distribution_factor: REAL
+      subclinical: REAL
+      c_iso: REAL
+      c_subclinical: REAL
+      p_hosp: REAL
+      mean_hosp: REAL
+      g_shape: REAL
+      g_scale: REAL
+      iso_mean: REAL
+      onset_shape: REAL
+      onset_scale: REAL
+      reporting_shape: REAL
+      reporting_scale: REAL
+      end_active: REAL
+      control_efficiency: REAL
+    logic: |
+      return 0
+  outbreak_step:
+    inputs:
+      R0: REAL
+      t: REAL
+      total_cases: REAL
+      population: REAL
+      initial_cases: REAL
+      initial_case_distribution_factor: REAL
+      subclinical: REAL
+      c_iso: REAL
+      c_subclinical: REAL
+      p_hosp: REAL
+      mean_hosp: REAL
+      g_shape: REAL
+      g_scale: REAL
+      iso_mean: REAL
+      onset_shape: REAL
+      onset_scale: REAL
+      reporting_shape: REAL
+      reporting_scale: REAL
+      end_active: REAL
+      control_efficiency: REAL
+    logic: |
+      return 0
+  calc_active:
+    inputs:
+      p: REAL
+    logic: |
+      return 0    
+initialisation:
+  state: model
+  valuations:
+    active_cases: (1 + 2 * initial_case_distribution_factor) * initial_cases * (1-subclinical)
+    C_dot: 0
+    total_cases: initialize(R0, t, total_cases, population,initial_cases,initial_case_distribution_factor,subclinical,c_iso,c_subclinical,p_hosp,mean_hosp,g_shape,g_scale,iso_mean,onset_shape,onset_scale,reporting_shape,reporting_scale, end_active, control_efficiency)
+    
+

@@ -1,0 +1,201 @@
+outputs:
+  S: REAL
+  E1: REAL 
+  E2: REAL
+  P1: REAL
+  P2: REAL
+  I1: REAL
+  I2: REAL
+  R: REAL
+  D: REAL
+  prob: REAL
+  C_dot: REAL
+  cases: REAL
+parameters:
+  population:
+    type: REAL
+    default: 4822233
+  initial_case_distribution_factor:
+    type: REAL
+    default: 4.8
+  initial_cases:
+    type: REAL
+    default: 39
+  qmax:
+    type: REAL
+    default: 1000
+  tiso_start:
+    type: REAL
+    default: 0
+  tiso_end:
+    type: REAL
+    default: 0
+  c_home:
+    type: REAL
+    default: 0.5
+  c_gen:
+    type: REAL
+    default: 0.5
+  tcont_start:
+    type: REAL
+    default: 0
+  tcont_end:
+    type: REAL
+    default: 0
+  psi:
+    type: REAL
+    default: 10
+  Ro:
+    type: REAL
+    default: 2.5
+  amp:
+    type: REAL
+    default: 0
+  de:
+    type: REAL
+    default: 4
+  ne:
+    type: REAL
+    default: 2
+  eps:
+    type: REAL
+    default: 0.25
+  dp:
+    type: REAL
+    default: 1
+  np:
+    type: REAL
+    default: 2
+  phi:
+    type: REAL
+    default: 1
+  ip:
+    type: REAL
+    default: 0.5
+  di:
+    type: REAL
+    default: 10
+  ni:
+    type: REAL
+    default: 2
+  gamma:
+    type: REAL
+    default: 0.1
+  p_sick:
+    type: REAL
+    default: 0.67
+  p_hosp:
+    type: REAL
+    default: 0.002
+  p_icu:
+    type: REAL
+    default: 0.25
+  p_dead:
+    type: REAL
+    default: 0.002
+  p_consult:
+    type: REAL
+    default: 0.40
+  p_test:
+    type: REAL
+    default: 0.1
+locations:
+  initial:
+    invariant: t>=0
+    flow:
+      S: -1 * S * (bp * P_sum + bi * (I_sum - cal_iso(I_sum, t) - cal_home_iso(I_sum, t) * calc_contact_home(t)) + psi) * (1 - calc_contact(t)) / population
+      E1: S * (bp * P_sum + bi * (I_sum - cal_iso(I_sum, t) - cal_home_iso(I_sum, t) * calc_contact_home(t)) + psi) * (1 - calc_contact(t))  / population - eps * E1
+      E2: eps * E1 - eps * E2
+      P1: eps * E2 - phi * P1
+      P2: phi * P1 - phi * P2
+      I1: phi * P2 - gamma * I1
+      I2: gamma * I1 - gamma * I2
+      R: gamma * (1 - p_sick * p_dead) * I2
+      D: gamma * p_sick * p_dead * I2      
+      cases: phi * P2 * p_sick
+      t: 1
+    update:
+      I_sum: I1 + I2 
+      E_sum: E1 + E2
+      P_sum: P1 + P2
+      bp: calc_bp(t)
+      bi: bp * ip
+      C_dot: phi * P2 * p_sick
+      prob: func_pow((1 - p_test) , cases * p_sick * (p_consult + p_hosp + p_dead))
+functions:
+  func_pow:
+    inputs:
+      x: REAL
+      y: REAL
+    logic: |
+      return pow(x,y)
+  cal_iso:
+    inputs:
+      y: REAL
+      t: REAL   
+    logic: |
+      if(t >= tiso_start && t<= tiso_end && p_sick * y < qmax) {
+        return p_sick * y
+      }
+      elseif(t >= tiso_start && t<= tiso_end && p_sick * y > qmax) {
+      return qmax
+      }
+      else {	
+        return 0
+      }
+  cal_home_iso:
+    inputs:
+      y: REAL
+      t: REAL
+    logic: |
+      if(t >= tiso_start && t<= tiso_end && p_sick * y > qmax){
+        return p_sick * y  - qmax
+      }
+      else{
+        return 0
+      }
+  calc_bp:
+    inputs:
+      t: REAL
+    logic:
+      return (Ro/(ip * dp + di)) * (1 + amp * cos(t/365)) 
+  calc_contact:
+    inputs:
+      t: REAL
+    logic: |
+      if(t >= tcont_start && t<= tcont_end){
+        return c_gen * 1
+      }
+      else{
+        return 0
+      }
+  calc_contact_home:
+    inputs:
+      t: REAL
+    logic: |
+      if(t >= tiso_start && t<= tiso_end){
+        return c_home * 1
+      }
+      else{
+        return 0
+      }
+initialisation:
+  state: initial
+  valuations:
+    S: population 
+    E1: initial_cases 
+    E2: 0
+    P1: 0
+    P2: 0
+    I1: 0
+    I2: 0
+    R: 0
+    D: 0
+    prob: 1 
+    I_sum: I1 + I2
+    E_sum: E1 + E2
+    P_sum: P1 + P2
+    bp: calc_bp(0)
+    bi: bp * ip
+    cases: 0  
+

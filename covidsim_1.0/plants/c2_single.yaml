@@ -1,0 +1,221 @@
+inputs:
+  Ro: REAL
+  c_home: REAL
+  c_gen: REAL
+  psi: REAL
+outputs:
+  S: REAL
+  E1: REAL 
+  P1: REAL
+  I1: REAL
+  I2: REAL
+  R: REAL
+  D: REAL
+  prob: REAL
+  C_dot: REAL
+  cases: REAL
+  I_sum: REAL
+  state_level: REAL
+parameters:
+  population:
+    type: REAL
+    default: 4822233
+  initial_case_distribution_factor:
+    type: REAL
+    default: 4.8
+  initial_cases:
+    type: REAL
+    default: 39
+  tmax:
+    type: REAL
+    default: 0
+  qmax:
+    type: REAL
+    default: 1000
+  amp:
+    type: REAL
+    default: 0
+  de:
+    type: REAL
+    default: 4
+  ne:
+    type: REAL
+    default: 1
+  eps:
+    type: REAL
+    default: 0.25
+  dp:
+    type: REAL
+    default: 1
+  np:
+    type: REAL
+    default: 1
+  phi:
+    type: REAL
+    default: 1
+  ip:
+    type: REAL
+    default: 0.5
+  di:
+    type: REAL
+    default: 10
+  ni:
+    type: REAL
+    default: 1
+  gamma:
+    type: REAL
+    default: 0.1
+  p_sick:
+    type: REAL
+    default: 0.67
+  p_hosp:
+    type: REAL
+    default: 0.01
+  p_icu:
+    type: REAL
+    default: 0.25
+  p_dead:
+    type: REAL
+    default: 0.00126
+  p_consult:
+    type: REAL
+    default: 0.40
+  p_test:
+    type: REAL
+    default: 1
+  c:
+    type: REAL
+    default: 0.1
+locations:
+  unconstrained:
+    invariant: c_home == 0
+    flow:
+      S: -1 * S * (bp * P1 + bi * (I1 - 0.5 * I_iso) )/ population
+      E1: S * (bp * P1 + bi * (I1 - 0.5 * I_iso) )/ population - eps * E1
+      P1: eps * E1 - phi * P1
+      I1: phi * P1 - (gamma) * I1
+      R: gamma * (1 - p_sick * p_dead) * I_sum
+      D: gamma * p_sick * p_dead * I_sum
+      cases: phi * P1 * p_sick 
+      t: 1
+    update:
+      I_sum: I1 
+      E_sum: E1 
+      P_sum: P1 
+      I_iso: I1 * p_sick 
+      I_home: 0
+      bi: calc_bp(Ro, t)
+      bp: bi * ip
+      C_dot: phi * P1 * p_sick 
+      prob: func_pow((1 - p_test) , cases * p_sick * (p_consult + p_hosp + p_dead))
+      state_level: 0
+    transitions:
+      - to: isolated_below
+        guard: c_home > 0 && p_sick * I_sum <= qmax
+        update:
+          I_iso: p_sick * I_sum
+          I_home:  0
+      - to: isolated_above
+        guard: c_home > 0 && p_sick * I_sum > qmax
+        update:
+          I_iso: qmax
+          I_home:  p_sick * I_sum - qmax
+  isolated_below:
+    invariant: c_home > 0 && p_sick * I_sum <= qmax
+    flow:
+      S: -1 * S * (bp * P_sum + bi * (I_sum - I_iso)) / population
+      E1: S * (bp * P_sum + bi * (I_sum - I_iso)) / population - eps * E1
+      P1: eps * E1 - phi * P1
+      I1: phi * P1 - gamma * I1
+      R: gamma * (1 - p_sick * p_dead) * I1
+      D: gamma * p_sick * p_dead * I1      
+      cases: phi * P1 * p_sick * p_test
+      t: 1
+    update:
+      I_sum: I1 
+      E_sum: E1 
+      P_sum: P1 
+      I_iso: p_sick * I_sum * p_test
+      I_home:  0
+      bi: calc_bp(Ro, t)
+      bp: bi * ip
+      C_dot: phi * P1
+      prob: func_pow((1 - p_test) , cases * p_sick * (p_consult + p_hosp + p_dead))
+      state_level: 1
+    transitions:
+      - to: unconstrained
+        guard: c_home == 0
+        update:
+          I_iso: 0
+          I_home:  0
+      - to: isolated_above
+        guard: c_home > 0 && p_sick * I_sum > qmax
+        update:
+          I_iso: qmax
+          I_home:  p_sick * I_sum - qmax
+  isolated_above:
+    invariant: c_home >0 && p_sick * I_sum > qmax
+    flow:
+      S: -1 * S * (bp * P_sum + bi * (0.33 * I_sum - I_iso - I_home * c_home) + psi) * (1 - c_gen) / population
+      E1: S * (bp * P_sum + bi * (0.33 * I_sum - I_iso - I_home * c_home) + psi) * (1 - c_gen) / population - eps * E1
+      P1: eps * E1 - phi * P1
+      I1: phi * P1 - gamma * I1
+      R: gamma * (1 - p_sick * p_dead) * I1
+      D: gamma * p_sick * p_dead * I1      
+      cases: phi * P1
+      t: 1
+    update:
+      I_sum: I1 
+      E_sum: E1 
+      P_sum: P1 
+      I_iso: qmax
+      I_home:  p_sick * I_sum - qmax
+      bi: calc_bp(Ro, t)
+      bp: bi * ip
+      C_dot: phi * P1 
+      prob: func_pow((1 - p_test) , cases * p_sick * (p_consult + p_hosp + p_dead))
+      state_level: 2
+    transitions:
+      - to: unconstrained
+        guard: c_home == 0
+        update:
+          I_iso: 0
+          I_home:  0
+      - to: isolated_below
+        guard: c_home > 0 && p_sick * I_sum <= qmax
+        update:
+          I_iso: p_sick * I_sum
+          I_home:  0
+functions:
+  func_pow:
+    inputs:
+      x: REAL
+      y: REAL
+    logic: |
+      return pow(x,y)
+  calc_bp:
+    inputs:
+      Ro: REAL
+      t: REAL
+    logic:
+      return (Ro/(ip * dp + di)) * (1 + amp * cos((t-tmax)/365)) 
+initialisation:
+  state: unconstrained
+  valuations:
+    E1: 1054.0
+    P1: 0.0
+    I1: 39.0/(p_sick)
+    S: population - E1 - I1 - P1
+    R: 0
+    D: 0
+    prob: 1 
+    I_sum: I1 
+    E_sum: E1 
+    P_sum: P1
+    I_iso: 0
+    I_home: 0
+    bi: calc_bp(Ro, 0)
+    bp: bi * ip
+    cases: initial_cases  
+    state_level: 0
+

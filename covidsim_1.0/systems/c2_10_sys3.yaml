@@ -1,0 +1,41 @@
+name: c2_system
+
+system:
+  outputs:
+    prob: REAL
+    cases: REAL
+    C_dot: REAL
+    Level: REAL
+    state_level: REAL
+    total: REAL
+    D: REAL
+  definitions:
+    Plant: !include ../plants/c2_10.yaml
+    Controller: !include ../controllers/c2_controller3.yaml
+  instances:
+    Plant: Plant
+    Controller: Controller
+  mappings:
+    Plant.Ro: Controller.R0
+    Plant.Roc: Controller.R0
+    Plant.c_home: 0.0
+    Plant.c_gen: 0.0
+    Plant.psi: 0.0
+    Controller.Ic: Plant.I_iso
+    state_level: Plant.state_level
+    prob: Plant.prob
+    cases: Plant.I_iso
+    C_dot: Plant.C_dot
+    Level: Controller.Level
+    total: Plant.cases
+    D: Plant.D
+codegenConfig:
+  execution:
+    stepSize: 0.001
+    simulationTime: 600
+  logging:
+    enable: true
+    interval: 0.1
+    file: out.csv
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: true

@@ -1,0 +1,23 @@
+The following assumptions were made considering the lack of information/description:
+
+(1) c_iso parameter is the percentage of contacts that is reduced due to contact reduction. We assume that this value is valid only between t_contstart and t_contend.
+In all other cases the value is zero.
+
+(2) c_home parameter is the percentage of contact prevented due to home isolation. We assume that this value is valid only between t_isostart and t_isoend.
+In all other cases the value is zero.
+
+(3) Internal stages have been considered for each of the infection stage. We assume it to be 2 (for simplicity, no other reason). But the duration of each infection stage can be 
+altered as needed. Due to the lack of features to create arrays, the code has to be manually modified for changing the number of stages.
+
+This is a problem with this framework. 
+
+(4) Functions/equations for tmax and c(t) have not been given. We have considered c(t) to be same as the c_iso parameter based on the same conditions (discussed in point 1).
+tmax is not used anywhere in the equations, it's purpose remains unidentified. 
+
+(5) The new cases in every step is equal to phi * P2 as these are the cases becoming infected every step.
+A different equation is described in the paper. (Check this contradiction --> correct in version 1.1)
+
+(7) All the derived variables can be computed from the 'out.csv' if needed. 
+
+NOTE:
+Check the power fucntion, variables are not replaced properly in it.

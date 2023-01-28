@@ -1,0 +1,30 @@
+name: nz-c2
+
+system:
+  outputs:
+    cases: REAL
+    Level: REAL
+  definitions:
+    Plant: !include ../plants/stochastic_plant.yaml
+    Controller: !include ../controllers/stochastic_controller.yaml
+  instances:
+    Plant: Plant
+    Controller: Controller
+  mappings:
+    Plant.R0: Controller.R0
+    Plant.control_efficiency: Controller.CE
+    Controller.Ic: Plant.active_cases
+    Controller.C_dot: Plant.C_dot
+    cases: Plant.active_cases
+    Level: Controller.Level
+
+codegenConfig:
+  execution:
+    stepSize: 1
+    simulationTime: 100
+  logging:
+    enable: true
+    interval: 1
+    file: out.csv
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: true

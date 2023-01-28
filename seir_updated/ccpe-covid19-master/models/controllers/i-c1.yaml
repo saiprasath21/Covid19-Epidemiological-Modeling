@@ -1,0 +1,198 @@
+inputs:
+  Ic: REAL
+  C_dot: REAL
+outputs:
+  R0: REAL
+  R0c: REAL
+  Phase: REAL
+parameters:
+  t_Pre_Phase0:
+    type: REAL
+    default: 10
+  t_Pre_Phase1:
+    type: REAL
+    default: 6
+  t_Pre_Phase2:
+    type: REAL
+    default: 10
+  t_Pre_Phase3:
+    type: REAL
+    default: 129
+  t_Pre_Phase2_2:
+    type: REAL
+    default: 32
+
+  t_min_P3:
+    type: REAL
+    default: 14
+  t_min_P2:
+    type: REAL
+    default: 14
+  t_min_P1:
+    type: REAL
+    default: 14
+
+  k_P1:
+    type: REAL
+    default: 605
+  k_P2:
+    type: REAL
+    default: 3023
+  k_P3:
+    type: REAL
+    default: 6046
+  dk_P1:
+    type: REAL
+    default: 0.01
+  dk_P2:
+    type: REAL
+    default: 5
+  dk_P3:
+    type: REAL
+    default: 10
+
+  R0_P0:
+    type: REAL
+    default: 6.3533
+  R0_P1:
+    type: REAL
+    default: 4.8051
+  R0_P2:
+    type: REAL
+    default: 3.2704
+  R0_P3:
+    type: REAL
+    default: 0.5808
+  R0_P4:
+    type: REAL
+    default: 2.6472
+locations:
+  Pre_Phase0:
+    invariant: t <= t_Pre_Phase0
+    flow:
+      t: 1
+    update:
+      R0: R0_P0
+      R0c: R0_P0
+      Phase: 0
+    transitions:
+      - to: Pre_Phase1
+        guard: t >= t_Pre_Phase0
+        update:
+          t: 0
+  Pre_Phase1:
+    invariant: t <= t_Pre_Phase1
+    flow:
+      t: 1
+    update:
+      R0: R0_P1
+      R0c: R0_P3
+      Phase: 1
+    transitions:
+      - to: Pre_Phase2
+        guard: t >= t_Pre_Phase1
+        update:
+          t: 0
+  Pre_Phase2:
+    invariant: t <= t_Pre_Phase2
+    flow:
+      t: 1
+    update:
+      R0: R0_P2
+      R0c: R0_P3
+      Phase: 2
+    transitions:
+      - to: Pre_Phase3
+        guard: t >= t_Pre_Phase2
+        update:
+          t: 0
+  Pre_Phase3:
+    invariant: t <= t_Pre_Phase3
+    flow:
+      t: 1
+    update:
+      R0: R0_P3
+      R0c: R0_P3
+      Phase: 3
+    transitions:
+      - to: Pre_Phase4
+        guard: t >= t_Pre_Phase3
+        update:
+          t: 0
+  Pre_Phase4:
+    invariant: t <= t_Pre_Phase2_2
+    flow:
+      t: 1
+    update:
+      R0: R0_P4
+      R0c: R0_P3
+      Phase: 2
+    transitions:
+      - to: Phase2
+        guard: t >= t_Pre_Phase2_2
+  Phase3:
+    flow:
+      t: 1
+    update:
+      R0: R0_P3
+      R0c: R0_P3
+      Phase: 3
+    transitions:
+      - to: Phase2
+        guard: C_dot <= dk_P3 && t >= t_min_P3
+        update:
+          t: 0
+  Phase2:
+    flow:
+      t: 1
+    update:
+      R0: R0_P2
+      R0c: R0_P3
+      Phase: 2
+    transitions:
+      - to: Phase3
+        guard: Ic >= k_P3
+        update:
+          t: 0
+      - to: Phase1
+        guard: C_dot <= dk_P2 && t >= t_min_P2
+        update:
+          t: 0
+  Phase1:
+    flow:
+      t: 1
+    update:
+      R0: R0_P1
+      R0c: R0_P3
+      Phase: 1
+    transitions:
+      - to: Phase3
+        guard: Ic >= k_P3
+        update:
+          t: 0
+      - to: Phase2
+        guard: Ic >= k_P2
+        update:
+          t: 0
+      - to: Phase0
+        guard: C_dot <= dk_P1 && t >= t_min_P1
+        update:
+          t: 0
+  Phase0:
+    flow:
+      t: 1
+    update:
+      R0: R0_P0
+      R0c: R0_P0
+      Phase: 0
+    transitions:
+      - to: Phase3
+        guard: Ic >= k_P3
+        update:
+          t: 0
+      - to: Phase1
+        guard: Ic >= k_P1
+        update:
+          t: 0
+initialisation:
+  state: Pre_Phase0

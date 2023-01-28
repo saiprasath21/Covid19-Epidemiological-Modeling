@@ -1,0 +1,54 @@
+name: nz-c2
+
+system:
+  outputs:
+    S: REAL
+    E: REAL
+    P: REAL
+    Iu: REAL
+    Ic: REAL
+    Ru: REAL
+    Rc: REAL
+    D: REAL
+    cases: REAL
+    Level: REAL
+  definitions:
+    Plant: !include ../plants/pl3.yaml
+    Controller: !include ../controllers/nz-c2.yaml
+  instances:
+    Plant:
+      type: Plant
+      parameters:
+        vaccine_arrival_date: 365
+        second_wave_date: 100
+        second_wave_size: 5
+    Controller: Controller
+  mappings:
+    Plant.R0: Controller.R0
+    Plant.R0c: Controller.R0c
+    Plant.c: Controller.c
+
+    Controller.Ic: Plant.Ic
+    Controller.C_dot: Plant.C_dot
+
+    S: Plant.S
+    E: Plant.E
+    P: Plant.P
+    Iu: Plant.Iu
+    Ic: Plant.Ic
+    Ru: Plant.Ru
+    Rc: Plant.Rc
+    D: Plant.D
+    cases: Plant.cases
+    Level: Controller.Level
+
+codegenConfig:
+  execution:
+    stepSize: 1
+    simulationTime: 600
+  logging:
+    enable: true
+    interval: 1
+    file: nz-c2.csv
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: true

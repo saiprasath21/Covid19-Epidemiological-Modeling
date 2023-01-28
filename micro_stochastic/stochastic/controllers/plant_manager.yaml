@@ -1,0 +1,127 @@
+inputs:
+  total_cases1: REAL
+  active_cases1: REAL
+  new_cases1: REAL
+  reported_cases1: REAL
+  r1: REAL
+  r2: REAL
+  r3: REAL
+  r4: REAL
+  r5: REAL
+  r6: REAL
+  r7: REAL
+  r8: REAL
+  r9: REAL
+  r10: REAL
+outputs:
+  time: REAL
+  total_cases: REAL
+  subclinical_cases: REAL
+  active_cases: REAL
+  new_cases: REAL
+  reported_cases: REAL
+parameters:
+  case_distribution_factor: 
+    type: REAL
+    default: 4.8
+  initial_cases:
+    type: REAL
+    default: 10
+  p_subclinical:
+    type: REAL
+    default: 0.33
+locations:
+  ainitial:
+    invariant: time < 1.0
+    flow:
+      time: 1.0
+    update:
+      subclinical_cases: stpoisson((initial_cases * p_subclinical/(1-p_subclinical)), r1, r2, r3, r4, r5, r6, r7, r8, r9, r10)
+      total_cases: initial_cases + subclinical_cases
+    transitions:
+      - to: binitial
+        guard: time >= 1.0
+  binitial:
+    invariant: time >= 1.0
+    flow:
+      time: 1.0
+    update:
+      total_cases: total_cases1
+      active_cases: active_cases1
+      new_cases: new_cases1
+      reported_cases: reported_cases1
+functions:
+  stexponential:
+    inputs:
+      lambda: REAL
+      random: REAL
+    logic: |
+      return -1 * (1/lambda) * ln(random)
+  stpoisson:
+    inputs:
+      mean: REAL
+      r1: REAL
+      r2: REAL
+      r3: REAL
+      r4: REAL
+      r5: REAL
+      r6: REAL
+      r7: REAL
+      r8: REAL
+      r9: REAL
+      r10: REAL
+    logic: |
+      sum=0
+      value=0
+      j = 0
+      for(i in 0 to 10){
+        if(j==0){
+          sum = sum + stexponential(mean, r1)
+        }
+        if(j==1){
+          sum = sum + stexponential(mean, r2)
+        }
+        if(j==2){
+          sum = sum + stexponential(mean, r3)
+        }
+        if(j==3){
+          sum = sum + stexponential(mean, r4)
+        }
+        if(j==4){
+          sum = sum + stexponential(mean, r5)
+        }
+        if(j==5){
+          sum = sum + stexponential(mean, r6)
+        }
+        if(j==6){
+          sum = sum + stexponential(mean, r7)
+        }
+        if(j==7){
+          sum = sum + stexponential(mean, r8)
+        }
+        if(j==8){
+          sum = sum + stexponential(mean, r9)
+        }
+        if(j==9){
+          sum = sum + stexponential(mean, r10)
+        }
+
+        if(sum > 1.0){
+          break
+        }
+        value = value + 1.0
+        j = j + 1.0
+      }
+      return value
+initialisation:
+  state: ainitial
+  valuations:
+    time: 0.0
+    total_cases: 10.0
+    active_cases: 0.0
+    new_cases: 0.0
+    reported_cases: 0.0
+    subclinical_cases: 0.0
+
+    
+

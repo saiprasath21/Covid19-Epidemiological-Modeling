@@ -1,0 +1,41 @@
+name: nz_c3_10
+
+system:
+  outputs:
+    C_dot: REAL
+    Level: REAL
+    total_cases: REAL
+    deaths: REAL
+    Iu: REAL
+    Ic: REAL
+
+  definitions:
+    Plant: !include ../plants/c2_10_tr.yaml
+    Controller: !include ../controllers/nz_c3.yaml
+
+  instances:
+    Plant: Plant
+    Controller: Controller
+
+  mappings:
+    Plant.Ro: Controller.R0
+    Plant.Roc: Controller.R0
+    Plant.c: 0.1
+    Controller.Ic: Plant.I_iso
+    C_dot: Plant.C_dot
+    Level: Controller.Level
+    total_cases: Plant.cases
+    deaths: Plant.D
+    Iu: Plant.U1
+    Ic: Plant.I_iso
+
+codegenConfig:
+  execution:
+    stepSize: 0.001
+    simulationTime: 600
+  logging:
+    enable: true
+    interval: 1
+    file: out.csv
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: true

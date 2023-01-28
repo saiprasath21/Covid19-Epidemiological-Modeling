@@ -1,0 +1,35 @@
+inputs:
+  Ic: REAL
+outputs:
+  R0: REAL
+  Level: REAL
+parameters:
+  k_L4:
+    type: REAL
+    default: 40000
+
+  R0_L0:
+    type: REAL
+    default: 2.5
+  R0_L4:
+    type: REAL
+    default: 0.316
+locations:
+  Level0:
+    invariant: Ic < k_L4
+    update:
+      R0: R0_L0
+      Level: 0
+    transitions:
+      - to: Level4
+        guard: Ic >= k_L4
+  Level4:
+    invariant: Ic > k_L4 / 2
+    update:
+      R0: R0_L4
+      Level: 4
+    transitions:
+      - to: Level0
+        guard: Ic <= k_L4 / 2
+initialisation:
+  state: Level0

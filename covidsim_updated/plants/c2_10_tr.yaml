@@ -1,0 +1,189 @@
+inputs:
+  Ro: REAL
+  Roc: REAL
+  c: REAL
+
+outputs:
+  C_dot: REAL
+  cases: REAL
+  I_sum: REAL
+  I_iso: REAL
+  S: REAL
+  E1: REAL
+  E2: REAL
+  E3: REAL
+  E4: REAL
+  P1: REAL
+  U1: REAL
+  I1: REAL
+  I2: REAL
+  I3: REAL
+  I4: REAL
+  I5: REAL
+  I6: REAL
+  I7: REAL
+  I8: REAL
+  I9: REAL
+  I10: REAL
+
+  D: REAL
+
+parameters:
+  population:
+    type: REAL
+    default: 4822233
+  initial_case_distribution_factor:
+    type: REAL
+    default: 4.8
+  initial_cases:
+    type: REAL
+    default: 39
+  de:
+    type: REAL
+    default: 4
+  ne:
+    type: REAL
+    default: 4
+  eps:
+    type: REAL
+    default: 1
+  dp:
+    type: REAL
+    default: 1
+  np:
+    type: REAL
+    default: 1
+  phi:
+    type: REAL
+    default: 1
+  ip:
+    type: REAL
+    default: 0.15
+  di:
+    type: REAL
+    default: 10
+  ni:
+    type: REAL
+    default: 10
+  gamma:
+    type: REAL
+    default: 1
+  p_sick:
+    type: REAL
+    default: 0.67
+  CFR0:
+    type: REAL
+    default: 0.01
+  CFR1:
+    type: REAL  
+    default: 0.02
+  n_ICU:
+    type: REAL
+    default: 300
+  p_ICU:
+    type: REAL
+    default: 0.0125
+
+locations:
+  unconstrained:
+    invariant: t>=0
+    flow:
+      S: -1 * S * (bp * P_sum + bi * U1 + biso * I_sum) / population
+      E1: S * (bp * P_sum + bi * U1 + biso * I_sum) / population - eps * E1
+      E2: eps * E1 - eps * E2
+      E3: eps * E2 - eps * E3
+      E4: eps * E3 - eps * E4
+      P1: eps * E4 - phi * P1
+      U1: phi * P1 - c * U1
+      I1: c * U1 - gamma * I1 
+      I2: gamma * I1 - gamma * I2 
+      I3: gamma * I2 - gamma * I3 
+      I4: gamma * I3 - gamma * I4 
+      I5: gamma * I4 - gamma * I5 
+      I6: gamma * I5 - gamma * I6 
+      I7: gamma * I6 - gamma * I7 
+      I8: gamma * I7 - gamma * I8 
+      I9: gamma * I8 - gamma * I9 
+      I10: gamma * I9 - gamma * I10    
+      R: gamma * (1 - CFR) * I10 
+      D: gamma * CFR * I10 
+      cases: c * U1
+      t: 1
+    update:
+      I_sum: find(I1 + I2 + I3 + I4 + I5 + I6 + I7 + I8 + I9 + I10, t) 
+      U1: find(U1, t)
+      E_sum: E1 + E2 + E3 + E4
+      P_sum: find(P1, t)
+      I_iso: I1 + I2 + I3 + I4 + I5 + I6 + I7 + I8 + I9 + I10 
+      bi: calc_bp(Ro)
+      biso: calc_bp(Roc)
+      bp: calc_bp(Ro) * ip
+      C_dot: c * U1
+      CFR: calc_CFR((I_sum+U1) * p_ICU)
+    transitions:
+      - to: unconstrained
+        guard: t == -1
+        update:
+          E1: E1 + 1
+          S: S - 1
+
+functions:
+
+  calc_bp:
+    inputs:
+      Ro: REAL
+    logic:
+      return (Ro/(ip * dp + di))
+
+  calc_CFR:
+    inputs:
+      ICU_patients: REAL
+    logic: |
+      if(ICU_patients > n_ICU) {
+        return CFR1 - (CFR1 - CFR0) * n_ICU / ICU_patients
+      }
+      return CFR0
+
+  find:
+    inputs:
+      x: REAL
+      t: REAL
+    logic: |
+      if(x <1 && t<80) {
+        return 0
+      }
+      return x
+
+initialisation:
+  state: unconstrained
+  valuations:
+    E1: 0.0
+    E2: 0.0
+    E3: 0.0
+    E4: 0.0
+    P1: 300.0
+    U1: 355.0
+    I1: 7.0
+    I2: 7.0
+    I3: 7.0
+    I4: 7.0
+    I5: 6.0
+    I6: 6.0
+    I7: 6.0
+    I8: 6.0
+    I9: 6.0
+    I10: 6.0
+    S: population - I2 * 9 - U1
+    R: 0
+    D: 0
+    I_sum: I1 + I2 + I3 + I4 + I5 + I6 + I7 + I8 + I9 + I10 
+    E_sum: E1 + E2 + E3 + E4
+    P_sum: P1
+    bi: calc_bp(Ro)
+    biso: calc_bp(Roc)
+    bp: calc_bp(Ro) * ip
+    cases: 64.0
+    CFR: 0.01
+    I_sum: 64.0
+    I_iso: 64.0
+

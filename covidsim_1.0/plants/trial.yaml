@@ -1,0 +1,301 @@
+inputs:
+  Ro: REAL
+  c_home: REAL
+  c_gen: REAL
+  psi: REAL
+  x: REAL
+  y: REAL
+outputs:
+  S: REAL
+  E1: REAL 
+  E2: REAL
+  E3: REAL
+  E4: REAL
+  P1: REAL
+  I1: REAL
+  I2: REAL
+  I3: REAL
+  I4: REAL
+  I5: REAL
+  I6: REAL
+  I7: REAL
+  I8: REAL
+  I9: REAL
+  I10: REAL
+  R: REAL
+  D: REAL
+  prob: REAL
+  C_dot: REAL
+  cases: REAL
+  I_sum: REAL
+  I_iso: REAL
+  state_level: REAL
+parameters:
+  population:
+    type: REAL
+    default: 4822233
+  initial_case_distribution_factor:
+    type: REAL
+    default: 0.49
+  initial_cases:
+    type: REAL
+    default: 39
+  tmax:
+    type: REAL
+    default: 0
+  qmax:
+    type: REAL
+    default: 1000
+  amp:
+    type: REAL
+    default: 0
+  de:
+    type: REAL
+    default: 4
+  ne:
+    type: REAL
+    default: 4
+  eps:
+    type: REAL
+    default: 1
+  dp:
+    type: REAL
+    default: 1
+  np:
+    type: REAL
+    default: 1
+  phi:
+    type: REAL
+    default: 1
+  ip:
+    type: REAL
+    default: 0.5
+  di:
+    type: REAL
+    default: 10
+  ni:
+    type: REAL
+    default: 10
+  gamma:
+    type: REAL
+    default: 1
+  p_sick:
+    type: REAL
+    default: 0.67
+  p_hosp:
+    type: REAL
+    default: 0.01
+  p_dead:
+    type: REAL
+    default: 0.014
+  p_consult:
+    type: REAL
+    default: 0.40
+  p_test:
+    type: REAL
+    default: 1
+  CFR0:
+    type: REAL
+    default: 0.01
+  CFR1:
+    type: REAL
+    default: 0.02
+  n_ICU:
+    type: REAL
+    default: 300
+  p_ICU:
+    type: REAL
+    default: 0.0125
+  e:
+    type: REAL
+    default: 1
+locations:
+  unconstrained:
+    invariant: c_home == 0
+    flow:
+      S: -1 * S * (bp * P_sum + bi * (I_sum - I_iso)) / population
+      E1: S * (bp * P_sum + bi * (I_sum - I_iso)) / population - eps * E1
+      E2: eps * E1 - eps * E2
+      E3: eps * E2 - eps * E3
+      E4: eps * E3 - eps * E4
+      P1: eps * E4 - phi * P1
+      I1: phi * P1 - gamma * I1 
+      I2: gamma * I1 - gamma * I2 
+      I3: gamma * I2 - gamma * I3 
+      I4: gamma * I3 - gamma * I4 
+      I5: gamma * I4 - gamma * I5 
+      I6: gamma * I5 - gamma * I6 
+      I7: gamma * I6 - gamma * I7 
+      I8: gamma * I7 - gamma * I8 
+      I9: gamma * I8 - gamma * I9 
+      I10: gamma * I9 - gamma * I10    
+      R: gamma * (1 - p_sick * p_dead) * I10
+      D: gamma * p_sick * p_dead * I10    
+      cases: phi * P1 * p_sick 
+      t: 1
+    update:
+      I_sum: I1 + I2 + I3 + I4 + I5 + I6 + I7 + I8 + I9 + I10 
+      E_sum: E1 + E2 + E3 + E4
+      P_sum: P1 
+      I_iso: I_sum * p_sick 
+      I_home: 0
+      bi: calc_bp(Ro, t)
+      bp: bi * ip
+      C_dot: phi * P1 * p_sick 
+      prob: func_pow((1 - p_test) , cases * p_sick * (p_consult + p_hosp + p_dead))
+      state_level: 0
+      CFR: calc_CFR(I_sum * p_ICU)
+    transitions:
+      - to: isolated_below
+        guard: c_home > 0 && p_sick * I_sum <= qmax
+        update:
+          I_iso: p_sick * I_sum
+          I_home:  0
+      - to: isolated_above
+        guard: c_home > 0 && p_sick * I_sum > qmax
+        update:
+          I_iso: qmax
+          I_home:  p_sick * I_sum - qmax
+  isolated_below:
+    invariant: c_home > 0 && p_sick * I_sum <= qmax
+    flow:
+      S: -1 * S * (bp * P_sum + bi * (I_sum - I_iso - I_home * c_home) + psi) * (1 - c_gen) / population
+      E1: S * (bp * P_sum + bi * (I_sum - I_iso - I_home * c_home) + psi) * (1 - c_gen) / population - eps * E1
+      E2: eps * E1 - eps * E2
+      E3: eps * E2 - eps * E3
+      E4: eps * E3 - eps * E4
+      P1: eps * E4 - phi * P1
+      I1: phi * P1 - gamma * I1
+      I2: gamma * I1 - gamma * I2
+      I3: gamma * I2 - gamma * I3
+      I4: gamma * I3 - gamma * I4   
+      I5: gamma * I4 - gamma * I5
+      I6: gamma * I5 - gamma * I6
+      I7: gamma * I6 - gamma * I7
+      I8: gamma * I7 - gamma * I8
+      I9: gamma * I8 - gamma * I9
+      I10: gamma * I9 - gamma * I10     
+      R: gamma * (1 - p_sick * p_dead) * I10
+      D: gamma * p_sick * p_dead * I10     
+      cases: phi * P1
+      t: 1
+    update:
+      I_sum: I1 + I2 + I3 + I4 + I5 + I6 + I7 + I8 + I9 + I10 
+      E_sum: E1 + E2 + E3 + E4
+      P_sum: P1 
+      I_iso: p_sick * I_sum 
+      I_home:  0
+      bi: calc_bp(Ro, t)
+      bp: bi * ip
+      C_dot: phi * P1 
+      prob: func_pow((1 - p_test) , cases * p_sick * (p_consult + p_hosp + p_dead))
+      state_level: 1
+    transitions:
+      - to: unconstrained
+        guard: c_home == 0
+        update:
+          I_iso: 0
+          I_home:  0
+      - to: isolated_above
+        guard: c_home > 0 && p_sick * I_sum > qmax
+        update:
+          I_iso: qmax
+          I_home:  p_sick * I_sum - qmax
+  isolated_above:
+    invariant: c_home >0 && p_sick * I_sum > qmax
+    flow:
+      S: -1 * S * (bp * P_sum + bi * (I_sum - I_iso - I_home * c_home) + psi) * (1 - c_gen) / population
+      E1: S * (bp * P_sum + bi * (I_sum - I_iso - I_home * c_home) + psi) * (1 - c_gen) / population - eps * E1
+      E2: eps * E1 - eps * E2
+      E3: eps * E2 - eps * E3
+      E4: eps * E3 - eps * E4
+      P1: eps * E4 - phi * P1
+      I1: phi * P1 - gamma * I1
+      I2: gamma * I1 - gamma * I2
+      I3: gamma * I2 - gamma * I3
+      I4: gamma * I3 - gamma * I4   
+      I5: gamma * I4 - gamma * I5
+      I6: gamma * I5 - gamma * I6
+      I7: gamma * I6 - gamma * I7
+      I8: gamma * I7 - gamma * I8
+      I9: gamma * I8 - gamma * I9
+      I10: gamma * I9 - gamma * I10     
+      R: gamma * (1 - p_sick * p_dead) * I10
+      D: gamma * p_sick * p_dead * I10      
+      cases: phi * P1 
+      t: 1
+    update:
+      I_sum: I1 + I2 + I3 + I4 + I5 + I6 + I7 + I8 + I9 + I10
+      E_sum: E1 + E2 + E3 + E4
+      P_sum: P1 
+      I_iso: qmax
+      I_home:  p_sick * I_sum - qmax
+      bi: calc_bp(Ro, t)
+      bp: bi * ip
+      C_dot: phi * P1
+      prob: func_pow((1 - p_test) , cases * p_sick * (p_consult + p_hosp + p_dead))
+      state_level: 2
+    transitions:
+      - to: unconstrained
+        guard: c_home == 0
+        update:
+          I_iso: 0
+          I_home:  0
+      - to: isolated_below
+        guard: c_home > 0 && p_sick * I_sum <= qmax
+        update:
+          I_iso: p_sick * I_sum
+          I_home:  0
+functions:
+  func_pow:
+    inputs:
+      x: REAL
+      y: REAL
+    logic: |
+      return pow(x,y)
+  calc_bp:
+    inputs:
+      Ro: REAL
+      t: REAL
+    logic:
+      return (Ro/(ip * dp + di)) * (1 + amp * cos(2*3.1415*(t-tmax)/365)) 
+  calc_CFR:
+    inputs:
+      ICU_patients: REAL
+    logic: |
+      if(ICU_patients > n_ICU) {
+        return CFR1 - (CFR1 - CFR0) * n_ICU / ICU_patients
+      }
+      return CFR0
+initialisation:
+  state: unconstrained
+  valuations:
+    S: population - x - y - 58.0
+    E1: x * 0.25 
+    E2: x * 0.25 
+    E3: x * 0.25 
+    E4: x * 0.25 
+    P1: y 
+    I1: (1 + initial_case_distribution_factor) * initial_cases * 0.1
+    I2: (1 + initial_case_distribution_factor) * initial_cases * 0.1
+    I3: (1 + initial_case_distribution_factor) * initial_cases * 0.1
+    I4: (1 + initial_case_distribution_factor) * initial_cases * 0.1
+    I5: (1 + initial_case_distribution_factor) * initial_cases * 0.1
+    I6: (1 + initial_case_distribution_factor) * initial_cases * 0.1
+    I7: (1 + initial_case_distribution_factor) * initial_cases * 0.1
+    I8: (1 + initial_case_distribution_factor) * initial_cases * 0.1
+    I9: (1 + initial_case_distribution_factor) * initial_cases * 0.1
+    I10: (1 + initial_case_distribution_factor) * initial_cases * 0.1
+    R: 0
+    D: 0
+    prob: 1 
+    I_sum: I1 + I2 + I3 + I4 + I5 + I6 + I7 + I8 + I9 + I10 
+    E_sum: E1 + E2 + E3 + E4
+    P_sum: P1 
+    I_iso: I_sum * p_sick
+    I_home: 0
+    bi: calc_bp(Ro, 0)
+    bp: bi * ip
+    cases: (1 + initial_case_distribution_factor) * initial_cases * p_sick 
+    state_level: 0
+

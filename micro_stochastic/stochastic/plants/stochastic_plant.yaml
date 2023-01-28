@@ -1,0 +1,330 @@
+inputs:
+  Ro: REAL
+  control_efficiency: REAL
+  t: REAL
+  start: REAL
+  total_cases: REAL
+  subclinical_cases: REAL
+  plant_no: REAL
+  random_variable1: REAL
+  random_variable2: REAL
+  random_variable3: REAL
+  random_variable4: REAL
+  random_variable5: REAL
+  random_variable6: REAL
+  random_variable7: REAL
+  random_variable8: REAL
+  random_variable9: REAL
+  random_variable10: REAL
+  
+outputs:
+  is_active: REAL
+  is_subclinical: REAL
+  is_hosp: REAL
+  is_isolated: REAL
+  is_reported: REAL
+  new_cases: REAL
+  
+  
+parameters:
+  population:
+    type: REAL
+    default: 4822233
+  p_subclinical:
+    type: REAL
+    default: 0.33
+  c_iso: 
+    type: REAL
+    default: 0.65
+  c_subclinical:
+    type: REAL
+    default: 0.5
+  p_hosp:
+    type: REAL
+    default: 0.0525
+  mean_hosp:
+    type: REAL
+    default: 10
+  g_shape:
+    type: REAL
+    default: 5.67
+  g_scale: 
+    type: REAL
+    default: 2.83
+  mean_iso:
+    type: REAL
+    default: 2.18
+  onset_shape:
+    type: REAL
+    default: 6.0
+  onset_scale:
+    type: REAL
+    default: 0.95
+  reporting_shape:
+    type: REAL
+    default: 1
+  reporting_scale:
+    type: REAL
+    default: 3.48
+  end_active:
+    type: REAL
+    default: 30
+
+locations:
+  initial:
+    invariant: start < 0.0 || t < 1.0
+    transitions:
+      - to: clinical
+        guard: check(t, random_variable1, p_subclinical, plant_no, total_cases, subclinical_cases)==0.0 && start >= 0.0 && t>=1.0
+        update:
+          is_active: 1.0
+          is_subclinical: 0.0
+          path: calc_type(random_variable1, p_hosp)
+          delay_onset: gamma(onset_shape, onset_scale, random_variable1, random_variable2, random_variable3, random_variable4, random_variable5, random_variable6, random_variable7, random_variable8, random_variable9, random_variable10)
+          t_exp: calc_exp(t, random_variable1)
+      - to: subclinical
+        guard: start >= 0.0 && t>=1.0
+        update:
+          is_subclinical: 1.0
+          is_active: 1.0
+  clinical:
+    invariant: t < t_exp + delay_onset 
+    update:
+      new_cases: poisson(Ro * control_efficiency * (1-(total_cases/population)) * (cumu_weibull(g_shape, g_scale, t-t_exp+1) - cumu_weibull(g_shape, g_scale, t-t_exp)), random_variable1, random_variable2, random_variable3, random_variable4, random_variable5, random_variable6, random_variable7, random_variable8, random_variable9, random_variable10)
+    transitions:
+      - to: end
+        guard: t > t_exp + end_active
+        update: 
+          is_active: 0.0
+      - to: hosp
+        guard: t > t_exp + delay_onset && path==1
+        update: 
+          hosp_length: exponential(1/mean_hosp, random_variable1)
+          is_hosp: 1.0
+          is_reported: 1.0
+      - to: before_isolation
+        guard: t > t_exp + delay_onset && path==0
+        update:
+          delay_iso: exponential(1/mean_iso, random_variable1)
+  subclinical:
+    invariant: t < t_exp + end_active
+    update:
+      new_cases: poisson(c_subclinical * Ro * control_efficiency * (1-(total_cases/population)) * (cumu_weibull(g_shape, g_scale, t-t_exp+1) - cumu_weibull(g_shape, g_scale, t-t_exp)), random_variable1, random_variable2, random_variable3, random_variable4, random_variable5, random_variable6, random_variable7, random_variable8, random_variable9, random_variable10)
+    transitions:
+      - to: end
+        guard: t > t_exp + end_active
+        update:
+          is_active: 0.0
+  hosp:
+    invariant: t < t_exp + delay_onset + hosp_length
+    update:
+      new_cases: 0.0
+    transitions:
+      - to: end
+        guard: t > t_exp + delay_onset + hosp_length || t > t_exp + end_active
+        update: 
+          is_hosp: 0.0
+          is_active: 0.0
+  before_isolation:
+    invariant: t < t_exp + delay_onset + delay_iso 
+    update: 
+      new_cases: poisson(Ro * control_efficiency * (1-(total_cases/population)) * (cumu_weibull(g_shape, g_scale, t-t_exp+1) - cumu_weibull(g_shape, g_scale, t-t_exp)), random_variable1, random_variable2, random_variable3, random_variable4, random_variable5, random_variable6, random_variable7, random_variable8, random_variable9, random_variable10)
+    transitions:
+      - to: after_isolation
+        guard: t > t_exp + delay_onset + delay_iso 
+        update:
+          delay_reported: gamma(reporting_shape, reporting_scale, random_variable1, random_variable2, random_variable3, random_variable4, random_variable5, random_variable6, random_variable7, random_variable8, random_variable9, random_variable10)
+          is_isolated: 1.0
+  after_isolation:
+    invariant: t < t_exp + delay_onset + delay_iso + delay_reported
+    update: 
+      new_cases: poisson(Ro * control_efficiency * (1-(total_cases/population)) * c_iso * (cumu_weibull(g_shape, g_scale, t-t_exp+1) - cumu_weibull(g_shape, g_scale, t-t_exp)), random_variable1, random_variable2, random_variable3, random_variable4, random_variable5, random_variable6, random_variable7, random_variable8, random_variable9, random_variable10)
+    transitions:
+      - to: end
+        guard: t > t_exp + delay_onset + delay_iso + delay_reported || t > t_exp + end_active
+        update:
+          is_active: 0.0
+          is_isolated: 0.0
+          is_reported: 1.0   
+  end:
+    invariant: t > 0
+    update:
+      new_cases: 0.0
+functions:
+  calc_type:
+    inputs:
+      random: REAL
+      prob: REAL
+    logic: |
+      if(random<prob){
+        return 1.0
+      }
+      return 0.0
+  exponential:
+    inputs:
+      lambda: REAL
+      random: REAL
+    logic: |
+      return -1 * (1/lambda) * ln(random)
+  cumu_weibull:
+    inputs:
+      lambda: REAL
+      k: REAL
+      t: REAL
+    logic: |
+      return 1 - exp(-1 * pow(t/lambda, k))
+  gamma:
+    inputs:
+      a: REAL
+      b: REAL
+      r1: REAL
+      r2: REAL
+      r3: REAL
+      r4: REAL
+      r5: REAL
+      r6: REAL
+      r7: REAL
+      r8: REAL
+      r9: REAL
+      r10: REAL
+    logic: |
+      sum=0
+      j=0
+      for(i in 0 to 10){
+        if(i >= a){
+          break
+          }
+        if(j==0){
+          sum = sum + exponential(1/b, r1)
+          }
+        if(j==1){
+          sum = sum + exponential(1/b, r2)
+          }
+        if(j==2){
+          sum = sum + exponential(1/b, r3)
+          }
+        if(j==3){
+          sum = sum + exponential(1/b, r4)
+          }
+        if(j==4){
+          sum = sum + exponential(1/b, r5)
+          }
+        if(j==5){
+          sum = sum + exponential(1/b, r6)
+          }
+        if(j==6){
+          sum = sum + exponential(1/b, r7)
+          }
+        if(j==7){
+          sum = sum + exponential(1/b, r8)
+          }
+        if(j==8){
+          sum = sum + exponential(1/b, r9)
+          }
+        if(j==9){
+          sum = sum + exponential(1/b, r10)
+          } 
+        j = j + 1.0   
+      }
+      return sum
+  poisson:
+    inputs:
+      mean: REAL
+      r1: REAL
+      r2: REAL
+      r3: REAL
+      r4: REAL
+      r5: REAL
+      r6: REAL
+      r7: REAL
+      r8: REAL
+      r9: REAL
+      r10: REAL
+    logic: |
+      sum=0
+      value=0
+      j = 0
+      for(i in 0 to 10){
+        if(j==0){
+          sum = sum + exponential(mean, r1)
+        }
+        if(j==1){
+          sum = sum + exponential(mean, r2)
+        }
+        if(j==2){
+          sum = sum + exponential(mean, r3)
+        }
+        if(j==3){
+          sum = sum + exponential(mean, r4)
+        }
+        if(j==4){
+          sum = sum + exponential(mean, r5)
+        }
+        if(j==5){
+          sum = sum + exponential(mean, r6)
+        }
+        if(j==6){
+          sum = sum + exponential(mean, r7)
+        }
+        if(j==7){
+          sum = sum + exponential(mean, r8)
+        }
+        if(j==8){
+          sum = sum + exponential(mean, r9)
+        }
+        if(j==9){
+          sum = sum + exponential(mean, r10)
+        }
+
+        if(sum > 1.0){
+          break
+        }
+        value = value + 1.0
+        j = j + 1.0
+      }
+      return value
+  calc_exp:
+    inputs:
+      time: REAL
+      random: REAL
+    logic: |
+      if(time == 1.0){
+        return 1.0 - random * 6.0
+      }
+      return time
+  check:
+    inputs:
+      time: REAL
+      random: REAL
+      prob: REAL
+      plant_no: REAL
+      total_cases: REAL
+      subclinical_cases: REAL
+    logic: |
+      if(time==1.0){
+        if((total_cases < plant_no) && (plant_no <= total_cases + subclinical_cases)){
+          return 1.0
+        }
+        return 0.0
+      }
+      else{
+        return calc_type(random, prob)
+      }
+initialisation:
+  state: initial
+  valuations:
+    new_cases: 0.0
+    is_active: 0.0
+    is_subclinical: 0.0
+    t_exp: 0.0
+    delay_onset: 0.0
+    path: 0.0
+    is_hosp: 0.0
+    hosp_length: 0.0
+    is_isolated: 0.0
+    delay_iso: 0.0
+    is_reported: 0.0
+    delay_reported: 0.0
+
+    
+

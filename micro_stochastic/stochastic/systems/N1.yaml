@@ -1,0 +1,34 @@
+inputs:
+  Ro: REAL
+  ce: REAL
+  !include random_variables.yaml
+  
+outputs:
+  active_cases: REAL
+  total_cases: REAL
+  c_dot: REAL
+  
+definitions:
+  Plant: !include ../plants/stochastic_plant.yaml
+  plant_manager: !include ../controllers/plant_manager.yaml
+  
+instances:
+  !include plant_variables.yaml
+  plant_manager: plant_manager
+  
+mappings:
+  !include plant_input_mappings.yaml
+  !include plant_manager_random_variables.yaml
+  plant_manager.total_cases1: plant_manager.total_cases + !include new_cases.yaml 
+  plant_manager.reported_cases1: !include reported_cases.yaml
+  plant_manager.active_cases1: !include active_cases.yaml
+  plant_manager.new_cases1: !include new_cases.yaml
+  active_cases: !include active_cases.yaml
+  total_cases: plant_manager.total_cases + plant_manager.subclinical_cases + !include new_cases.yaml 
+  c_dot: -1.0 * plant_manager.reported_cases  + !include reported_cases.yaml 
+
+  
+
+
+  
+  

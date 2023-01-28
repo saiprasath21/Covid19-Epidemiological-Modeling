@@ -1,0 +1,38 @@
+name: covidsim_system
+
+system:
+  outputs:
+    S: REAL
+    E1: REAL 
+    P1: REAL
+    I1: REAL
+    R: REAL
+    D: REAL
+    prob: REAL
+    cases: REAL
+    C_dot: REAL
+  definitions:
+    Plant: !include ../plants/original_single_plant.yaml
+  instances:
+    Plant:
+      type: Plant
+  mappings:
+    S: Plant.S
+    E1: Plant.E1
+    P1: Plant.P1
+    I1: Plant.I1
+    R: Plant.R
+    D: Plant.D
+    prob: Plant.prob
+    cases: Plant.cases
+    C_dot: Plant.C_dot
+codegenConfig:
+  execution:
+    stepSize: 0.01
+    simulationTime: 1000
+  logging:
+    enable: true
+    interval: 0.1
+    file: out.csv
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: true

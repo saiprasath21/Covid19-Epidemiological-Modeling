@@ -1,0 +1,270 @@
+inputs:
+  Ic: REAL
+  C_dot: REAL
+outputs:
+  R0: REAL
+  R0c: REAL
+  c: REAL
+  Level: REAL
+  
+parameters:
+  t_1:
+    type: REAL
+    default: 5
+  t_2:
+    type: REAL
+    default: 14
+  t_3:
+    type: REAL
+    default: 21
+  t_4:
+    type: REAL
+    default: 42
+  t_5:
+    type: REAL
+    default: 64
+  t_6:
+    type: REAL
+    default: 19
+
+  t_min_L4:
+    type: REAL
+    default: 14
+  t_min_L3:
+    type: REAL
+    default: 14
+  t_min_L2:
+    type: REAL
+    default: 14
+  t_min_L1:
+    type: REAL
+    default: 14
+
+  k_L1:
+    type: REAL
+    default: 1
+  k_L2:
+    type: REAL
+    default: 5
+  k_L3:
+    type: REAL
+    default: 50
+  k_L4:
+    type: REAL
+    default: 100
+  dk_L1:
+    type: REAL
+    default: 0.01
+  dk_L2:
+    type: REAL
+    default: 5
+  dk_L3:
+    type: REAL
+    default: 10
+
+  R0_L0:
+    type: REAL
+    default: 2.5
+  R0_L1:
+    type: REAL
+    default: 2.5
+  R0_L2:
+    type: REAL
+    default: 1.384
+  R0_L3:
+    type: REAL
+    default: 0.827
+  R0_L4:
+    type: REAL
+    default: 0.316
+  R0_Iso:
+    type: REAL
+    default: 0.02
+
+  c_L0:
+    type: REAL
+    default: 0.10
+  c_L1:
+    type: REAL
+    default: 0.01
+  c_L2:
+    type: REAL
+    default: 0.15
+  c_L3:
+    type: REAL
+    default: 0.20
+  c_L4:
+    type: REAL
+    default: 0.30
+locations:
+  Pre_Level0:
+    invariant: t <= t_1
+    flow:
+      t: 1
+    update:
+      R0: R0_L0
+      R0c: R0_Iso
+      c: c_L0
+      Level: 0
+    transitions:
+      - to: Pre_Level4
+        guard: t >= t_1
+        update:
+          t: 0
+  Pre_Level4:
+    invariant: t <= t_2
+    flow:
+      t: 1
+    update:
+      R0: R0_L4
+      R0c: R0_Iso
+      c: c_L4
+      Level: 4
+    transitions:
+      - to: Pre_Level3
+        guard: t >= t_2
+        update:
+          t: 0
+  Pre_Level3:
+    invariant: t <= t_3
+    flow:
+      t: 1
+    update:
+      R0: R0_L3
+      R0c: R0_Iso
+      c: c_L3
+      Level: 3
+    transitions:
+      - to: Pre_Level2
+        guard: t >= t_3
+        update:
+          t: 0
+  Pre_Level2:
+    invariant: t <= t_4
+    flow:
+      t: 1
+    update:
+      R0: R0_L2
+      R0c: R0_Iso
+      c: c_L2
+      Level: 2
+    transitions:
+      - to: Pre_Level1
+        guard: t >= t_4
+        update:
+          t: 0
+  Pre_Level1:
+    invariant: t <= t_5
+    flow:
+      t: 1
+    update:
+      R0: R0_L1
+      R0c: R0_Iso
+      c: c_L1
+      Level: 1
+    transitions:
+      - to: Pre_Level3_2
+        guard: t >= t_5
+        update:
+          t: 0
+  Pre_Level3_2:
+    invariant: t <= t_6
+    flow:
+      t: 1
+    update:
+      R0: R0_L3
+      R0c: R0_Iso
+      c: c_L3
+      Level: 3
+    transitions:
+      - to: Level2
+        guard: t >= t_6
+        update:
+          t: 0
+  Level4:
+    flow:
+      t: 1
+    update:
+      R0: R0_L4
+      R0c: R0_Iso
+      c: c_L4
+      Level: 4
+    transitions:
+      - to: Level3
+        guard: Ic < k_L4 && t >= t_min_L4
+        update:
+          t: 0
+  Level3:
+    flow:
+      t: 1
+    update:
+      R0: R0_L3
+      R0c: R0_Iso
+      c: c_L3
+      Level: 3
+    transitions:
+      - to: Level4
+        guard: Ic >= k_L4
+        update:
+          t: 0
+      - to: Level2
+        guard: C_dot <= dk_L3 && t >= t_min_L3
+        update:
+          t: 0
+  Level2:
+    flow:
+      t: 1
+    update:
+      R0: R0_L2
+      R0c: R0_Iso
+      c: c_L2
+      Level: 2
+    transitions:
+      - to: Level4
+        guard: Ic >= k_L4
+        update:
+          t: 0
+      - to: Level3
+        guard: Ic >= k_L3
+        update:
+          t: 0
+      - to: Level1
+        guard: C_dot <= dk_L2 && t >= t_min_L2
+        update:
+          t: 0
+  Level1:
+    flow:
+      t: 1
+    update:
+      R0: R0_L1
+      R0c: R0_Iso
+      c: c_L1
+      Level: 1
+    transitions:
+      - to: Level4
+        guard: Ic >= k_L4
+        update:
+          t: 0
+      - to: Level2
+        guard: Ic >= k_L2
+        update:
+          t: 0
+      - to: Level0
+        guard: C_dot <= dk_L1 && t >= t_min_L1
+        update:
+          t: 0
+  Level0:
+    flow:
+      t: 1
+    update:
+      R0: R0_L0
+      R0c: R0_Iso
+      c: c_L0
+      Level: 0
+    transitions:
+      - to: Level1
+        guard: Ic >= k_L1
+        update:
+          t: 0
+initialisation:
+  state: Pre_Level0

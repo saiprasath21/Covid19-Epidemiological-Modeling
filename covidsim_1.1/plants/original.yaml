@@ -1,0 +1,300 @@
+outputs:
+  S: REAL
+  E1: REAL 
+  E2: REAL
+  P1: REAL
+  P2: REAL
+  I1: REAL
+  I2: REAL
+  L1: REAL
+  L2: REAL
+  R: REAL
+  D: REAL
+  prob: REAL
+  C_dot: REAL
+  cases: REAL
+parameters:
+  population:
+    type: REAL
+    default: 1000000
+  initial_cases:
+    type: REAL
+    default: 100
+  qmax:
+    type: REAL
+    default: 1000
+  tiso1:
+    type: REAL
+    default: 0
+  tiso2:
+    type: REAL
+    default: 300
+  p_home:
+    type: REAL
+    default: 0.8
+  p_dist:
+    type: REAL
+    default: 0.5
+  tdist1:
+    type: REAL
+    default: 0
+  tdist2:
+    type: REAL
+    default: 600
+  l_ext:
+    type: REAL
+    default: 2
+  Ro:
+    type: REAL
+    default: 4
+  amp:
+    type: REAL
+    default: 0
+  tmax:
+    type: REAL
+    default: 0
+  de:
+    type: REAL
+    default: 4
+  ne:
+    type: REAL
+    default: 2
+  eps:
+    type: REAL
+    default: 0.5
+  dp:
+    type: REAL
+    default: 1
+  np:
+    type: REAL
+    default: 2
+  phi:
+    type: REAL
+    default: 2
+  cp:
+    type: REAL
+    default: 0.5
+  di:
+    type: REAL
+    default: 10
+  ni:
+    type: REAL
+    default: 2
+  gamma:
+    type: REAL
+    default: 0.2
+  dl:
+    type: REAL
+    default: 10
+  nl:
+    type: REAL
+    default: 2
+  delta:
+    type: REAL
+    default: 0.2
+  cl:
+    type: REAL
+    default: 0.5
+  fsick:
+    type: REAL
+    default: 0.58
+  t_fsick:
+    type: REAL
+    default: 0.002
+  th_sick:
+    type: REAL
+    default: 0.25
+  p_sick:
+    type: REAL
+    default: 0.002
+  fconsult:
+    type: REAL
+    default: 0.40
+  fhosp:
+    type: REAL
+    default: 0.1
+  dhosp:
+    type: REAL
+    default: 0.1
+  t_fhosp:
+    type: REAL
+    default: 0.002
+  th_hosp:
+    type: REAL
+    default: 0.25
+  p_hosp:
+    type: REAL
+    default: 0.002
+  ficu:
+    type: REAL
+    default: 0.002
+  dicu:
+    type: REAL
+    default: 0.002
+  th_icu:
+    type: REAL
+    default: 0.002
+  p_icu:
+    type: REAL
+    default: 0.002
+  fdead:
+    type: REAL
+    default: 0.002
+  t_fdead:
+    type: REAL
+    default: 0.002
+locations:
+  initial:
+    invariant: t>=0
+    flow:
+      S: -1 * S * (l_ext + b * (cp * P_sum + I_sum - Iiso(I_sum, L_sum, t) - p_home * Ihome(I_sum, L_sum, t)) + cl * (L_sum - Liso(I_sum, L_sum, t) - p_home * Lhome(I_sum, L_sum, t))) / population
+      E1: S * (l_ext + b * (cp * P_sum + I_sum - Iiso(I_sum, L_sum, t) - p_home * Ihome(I_sum, L_sum, t)) + cl * (L_sum - Liso(I_sum, L_sum, t) - p_home * Lhome(I_sum, L_sum, t))) / population - eps * E1
+      E2: eps * E1 - eps * E2
+      P1: eps * E2 - phi * P1
+      P2: phi * P1 - phi * P2
+      I1: phi * P2 - gamma * I1
+      I2: gamma * I1 - gamma * I2
+      L1: gamma * I2 - delta * L1
+      L2: delta * L1 - delta * L2
+      R: delta * (1 - p_sick * p_dead) * L2
+      D: delta * p_sick * p_dead * L2      
+      cases: phi * P2
+      t: 1
+    update:
+      I_sum: I1 + I2 
+      E_sum: E1 + E2
+      P_sum: P1 + P2
+      L_sum: L1 + L2
+      g: maxi(p_gen(t), ptr_sick(I_sum, L_sum), ptr_hosp(I_sum, L_sum), ptr_icu(I_sum, L_sum))
+      b: beta(t, g)
+      C_dot: phi * P2 
+      prob: 0
+functions:
+  p_gen:
+    inputs:
+      t: REAL   
+    logic: |
+      if(t >= tdist1 && t<= tdist2) {
+        return p_dist
+      }
+      return 0
+  ptr_sick:
+    inputs:
+      I: REAL
+      L: REAL
+    logic: |
+      if( ( I + L ) >= th_sick * population){
+        return p_sick 
+      }
+      return 0
+  ptr_hosp:
+    inputs:
+      I: REAL
+      L: REAL
+    logic: |
+      if( ( I + L ) * fsick * fhosp >= th_hosp * population){
+        return p_hosp
+      }
+      return 0
+  ptr_icu:
+    inputs:
+      I: REAL
+      L: REAL
+    logic: |
+      if( ( I + L ) * fsick * fhosp * ficu >= th_icu * population){
+        return p_sick 
+      }
+      return 0
+  Iiso:
+    inputs:
+      I: REAL
+      L: REAL
+      t: REAL
+    logic: |
+      if(t >= tiso1 && t<= tiso2 && fsick * (I + L) <= qmax ){
+        return fsick * I
+      }
+      elseif(t >= tiso1 && t<= tiso2 && fsick * (I + L) > qmax ){
+        return (I/(I + L)) * qmax
+      }
+      return 0
+  Liso:
+    inputs:
+      I: REAL
+      L: REAL
+      t: REAL
+    logic: |
+      if(t >= tiso1 && t<= tiso2 && fsick * (I + L) <= qmax ){
+        return fsick * L
+      }
+      elseif(t >= tiso1 && t<= tiso2 && fsick * (I + L) > qmax ){
+        return (L/(I + L)) * qmax
+      }
+      return 0
+  Ihome:
+    inputs:
+      I: REAL
+      L: REAL
+      t: REAL
+    logic: |
+      if(t >= tiso1 && t<= tiso2 && fsick * (I + L) > qmax){
+        return I - (I/(I + L)) * qmax
+      }
+      return 0
+  Lhome:
+    inputs:
+      I: REAL
+      L: REAL
+      t: REAL
+    logic: |
+      if(t >= tiso1 && t<= tiso2 && fsick * (I + L) > qmax){
+        return L - (L/(I + L)) * qmax
+      }
+      return 0
+  maxi:
+    inputs:
+      a: REAL
+      b: REAL
+      c: REAL
+      d: REAL
+    logic: |
+      if( a>=b && a>=c && a>=d){
+        return a
+      } 
+      elseif( b>=a && b>=c && b>=d){
+        return b
+      } 
+      elseif( c>=a && c>=b && c>=d){
+        return c
+      } 
+      return d
+  beta:
+    inputs:
+      t: REAL
+      p: REAL
+     logic: |
+      return (Ro/(cp * dp + di + cl * dl))*(1 + amp * cos(2 * 3.1428 * (t - tmax)/365)) * (1 - p)
+initialisation:
+  state: initial
+  valuations:
+    S: population
+    E1: initial_cases
+    E2: 0
+    P1: 0
+    P2: 0
+    I1: 0
+    I2: 0
+    L1: 0
+    L2: 0
+    R: 0
+    D: 0
+    prob: 0 
+    I_sum: I1 + I2
+    E_sum: E1 + E2
+    P_sum: P1 + P2
+    L_sum: L1 + L2
+    g: maxi(p_gen(t), ptr_sick(I_sum, L_sum), ptr_hosp(I_sum, L_sum), ptr_icu(I_sum, L_sum))
+    b: beta(t, g)
+    C_dot: 0 
+    cases: 0  
+

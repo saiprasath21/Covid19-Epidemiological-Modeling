@@ -1,0 +1,46 @@
+name: nz-c1
+
+system:
+  outputs:
+    S: REAL
+    E: REAL
+    P: REAL
+    Iu: REAL
+    Ic: REAL
+    Ru: REAL
+    Rc: REAL
+    D: REAL
+    cases: REAL
+    Level: REAL
+  definitions:
+    Plant: !include ../plants/pl2.yaml
+    Controller: !include ../controllers/nz-c1.yaml
+  instances:
+    Plant: Plant
+    Controller: Controller
+  mappings:
+    Plant.R0: Controller.R0
+    Plant.R0c: Controller.R0c
+    Plant.c: Controller.c
+
+    S: Plant.S
+    E: Plant.E
+    P: Plant.P
+    Iu: Plant.Iu
+    Ic: Plant.Ic
+    Ru: Plant.Ru
+    Rc: Plant.Rc
+    D: Plant.D
+    cases: Plant.cases
+    Level: Controller.Level
+
+codegenConfig:
+  execution:
+    stepSize: 0.001
+    simulationTime: 600
+  logging:
+    enable: true
+    interval: 1
+    file: nz-c1.csv
+  maximumInterTransitions: 1
+  requireOneIntraTransitionPerTick: true

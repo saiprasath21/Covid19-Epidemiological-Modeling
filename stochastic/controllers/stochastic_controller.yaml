@@ -1,0 +1,204 @@
+inputs:
+  Ic: REAL
+  C_dot: REAL
+  
+outputs:
+  R0: REAL
+  R0c: REAL
+  Level: REAL
+  CE: REAL
+  
+parameters:
+  t_Pre_Level0:
+    type: REAL
+    default: 6
+  t_Pre_Level4:
+    type: REAL
+    default: 33
+
+  t_min_L4:
+    type: REAL
+    default: 14
+  t_min_L3:
+    type: REAL
+    default: 14
+  t_min_L2:
+    type: REAL
+    default: 14
+  t_min_L1:
+    type: REAL
+    default: 14
+
+  k_L1:
+    type: REAL
+    default: 50
+  k_L2:
+    type: REAL
+    default: 250
+  k_L3:
+    type: REAL
+    default: 500
+  k_L4:
+    type: REAL
+    default: 40000
+  dk_L1:
+    type: REAL
+    default: 0.01
+  dk_L2:
+    type: REAL
+    default: 5
+  dk_L3:
+    type: REAL
+    default: 10
+
+  R0_L0:
+    type: REAL
+    default: 2.5
+  R0_L1:
+    type: REAL
+    default: 1.57
+  R0_L2:
+    type: REAL
+    default: 1.384
+  R0_L3:
+    type: REAL
+    default: 0.827
+  R0_L4:
+    type: REAL
+    default: 0.316
+    
+  CE_L0:
+    type: REAL
+    default: 1
+  CE_L1:
+    type: REAL
+    default: 1
+  CE_L2:
+    type: REAL
+    default: 0.72
+  CE_L3:
+    type: REAL
+    default: 0.52
+  CE_L4:
+    type: REAL
+    default: 0.32
+locations:
+  Pre_Level0:
+    invariant: t <= t_Pre_Level0
+    flow:
+      t: 1
+    update:
+      R0: R0_L0
+      R0c: R0_L0
+      Level: 0
+      CE: CE_L0
+    transitions:
+      - to: Pre_Level4
+        guard: t >= t_Pre_Level0
+        update:
+          t: 0
+  Pre_Level4:
+    invariant: t <= t_Pre_Level4
+    flow:
+      t: 1
+    update:
+      R0: R0_L4
+      R0c: R0_L4
+      Level: 4
+      CE: CE_L4
+    transitions:
+      - to: Level3
+        guard: t >= t_Pre_Level4
+        update:
+          t: 0
+  Level4:
+    flow:
+      t: 1
+    update:
+      R0: R0_L4
+      R0c: R0_L4
+      Level: 4
+      CE: CE_L4
+    transitions:
+      - to: Level3
+        guard: Ic < k_L4 && t >= t_min_L4
+        update:
+          t: 0
+  Level3:
+    flow:
+      t: 1
+    update:
+      R0: R0_L3
+      R0c: R0_L4
+      Level: 3
+      CE: CE_L3
+    transitions:
+      - to: Level4
+        guard: Ic >= k_L4
+        update:
+          t: 0
+      - to: Level2
+        guard: C_dot <= dk_L3 && t >= t_min_L3
+        update:
+          t: 0
+  Level2:
+    flow:
+      t: 1
+    update:
+      R0: R0_L2
+      R0c: R0_L4
+      Level: 2
+      CE: CE_L2
+    transitions:
+      - to: Level4
+        guard: Ic >= k_L4
+        update:
+          t: 0
+      - to: Level3
+        guard: Ic >= k_L3
+        update:
+          t: 0
+      - to: Level1
+        guard: C_dot <= dk_L2 && t >= t_min_L2
+        update:
+          t: 0
+  Level1:
+    flow:
+      t: 1
+    update:
+      R0: R0_L1
+      R0c: R0_L4
+      Level: 1
+      CE: CE_L2
+    transitions:
+      - to: Level4
+        guard: Ic >= k_L4
+        update:
+          t: 0
+      - to: Level2
+        guard: Ic >= k_L2
+        update:
+          t: 0
+      - to: Level0
+        guard: C_dot <= dk_L1 && t >= t_min_L1
+        update:
+          t: 0
+  Level0:
+    flow:
+      t: 1
+    update:
+      R0: R0_L0
+      R0c: R0_L0
+      Level: 0
+      CE: CE_L0
+    transitions:
+      - to: Level1
+        guard: Ic >= k_L1
+        update:
+          t: 0
+initialisation:
+  state: Pre_Level0
+  valuations:
+    R0: R0_L0
+    R0c: R0_L0
+    CE: CE_L0

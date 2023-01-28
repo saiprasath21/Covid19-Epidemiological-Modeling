@@ -1,0 +1,19 @@
+outputs:
+  !include random_variables.yaml
+  
+locations:
+  initial:
+    invariant: t >= 0.0
+    update:
+      !include random_initialize.yaml
+      
+   
+functions:
+  calc_rand:
+    logic: |
+      return 0.0
+      
+initialisation:
+  state: initial
+  valuations:
+    !include random_initialize.yaml
